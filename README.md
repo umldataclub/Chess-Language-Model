@@ -305,11 +305,26 @@ python src/data_collection/experiment.py --pgn test_game.pgn --ply 21 --model "G
 
 ## Architecture
 
-The system currently uses a **Position Adapter** architecture to ground the LLM in the chess position. The adapter projects the board state into the LLM's embedding space as prefix tokens.
+The system currently uses a **Position Adapter** architecture to ground the LLM in the chess position. Each square is transformed into a set of features, which is passed through an MLP adapter and projected into the language model's 2048-dimension embedding space. The language model uses these embeddings (1 side token + 64 square tokens) as context for its prediction. e.g:
+
+### Input Sequence representation
+The model receives a concatenated sequence of embeddings:
+
+`[Side Token]` + `[64 Square Tokens]` + `[Prompt Tokens]` $\to$ `[Commentary]`
+
+1.  **Side Token** (1 embedding): Encodes side-to-move (White/Black).
+2.  **Square Tokens** (64 embeddings): Represents the board state from A1 to H8.
+3.  **Prompt Tokens**: The chat template applied to the prompt.
+    ```text
+    <|user|>
+    Provide commentary on this chess position.</s>
+    <|assistant|>
+    ```
+
 
 ### Core Components
 1.  **Base Model**: `TinyLlama-1.1B-Chat`.
-2.  **Fine-Tuning**: LoRA (Low-Rank Adaptation) on attention modules (`q_proj`, `v_proj`, `k_proj`, `o_proj`) and MLP modules (`gate_proj`, `up_proj`, `down_proj`).
+2.  **Fine-Tuning**: LoRA (Low-Rank Adaptation) on attention modules (`q_proj`, `v_proj`, `k_proj`, `o_proj`) and optionally MLP modules (`gate_proj`, `up_proj`, `down_proj`).
 3.  **Adapter**: A specialized adapter projects the board state into the LLM's embedding space as prefix tokens.
 
 ### Modes
@@ -333,7 +348,7 @@ A lightweight, minimal mode that uses explicitly manual features.
         -   **State (1 dim)**: Boolean flag indicating if the square is empty.
         -   *(Remaining 185 dims are zero-padded)*.
 
--   **Adapter**: MLP projecting $204 \to 2048$ (LLM hidden dim).
+-   **Adapter**: MLP projecting $204 \to 2048$ (LLM hidden dim). 
 
 #### 2. Hybrid Mode (`mode: "hybrid"`)
 Combines LC0 network features with engineered features.
