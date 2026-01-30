@@ -2,8 +2,6 @@
 
 ## Vision
 
-## Vision
-
 This project explores training language models to produce chess commentary. While existing models have some ability to discuss chess, this project uniquely approaches the problem by improving the model's native ability for chess understanding, rather than relying on zero-shot, hallucination-prone generation.
 
 This project lies on two key insights:
